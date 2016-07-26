@@ -102,7 +102,6 @@ Currency.prototype.setDelta = function(self){
             self.currency[i].rateSaleDeltaTemplate = "";
         }
     }
-
 };
 
 Currency.prototype.setBankList = function(list, self){
@@ -110,7 +109,3 @@ Currency.prototype.setBankList = function(list, self){
         return (list.indexOf(bank.bankName) >= 0);
     })
 };
-
-
-
-
