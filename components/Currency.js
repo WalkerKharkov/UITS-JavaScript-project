@@ -3,9 +3,11 @@ function Currency(elem){
     if (!elem) return;
 
     this.currency = {};
+    this.currencyList = [];
     this.elem = elem;
     this.currencyTemplate = "";
-    this.bankList = ["ПриватБанк", "ПУМБ", "Укрсоцбанк"];
+    this.bankList = ["ПриватБанк", "ПУМБ", "Укрсоцбанк", "РодовIд Банк"];
+    this.buffer = {};
 
     this.init();
 }
@@ -19,7 +21,7 @@ Currency.prototype.init = function(){
 Currency.prototype.setCurrencyList = function(response, self){
     self.currency = JSON.parse(response);
     self.setBankList(self.bankList, self);
-    self.setDelta(self);
+    self.setDeltaTemplates(self);
     self.currencyTemplate += '<table class="-new-currensy">' +
                                 '<tr>' +
                                     '<th>' +
@@ -35,10 +37,10 @@ Currency.prototype.setCurrencyList = function(response, self){
                                         '<span>Продажа</span>' +
                                     '</th>' +
                                 '</tr>';
-    for (var i = 0; i <= (self.currency.length - 3); i += 3) {
+    for (var i = 0; i < self.currencyList.length; i++) {
         self.currencyTemplate += '<tr>' +
                                     '<td>' +
-                                        '<p><i>' + self.currency[i].bankName + '</i></p>' +
+                                        '<p><i>' + self.currencyList[i].bankName + '</i></p>' +
                                     '</td>' +
                                     '<td>' +
                                         '<span>' +
@@ -53,30 +55,36 @@ Currency.prototype.setCurrencyList = function(response, self){
                                     '</td>' +
                                     '<td>' +
                                         '<span>' +
-                                            '<mark>' + self.currency[i].rateBuy + '</mark>&nbsp; &nbsp;' +
-                                            self.currency[i].rateBuyDeltaTemplate +
+                                            '<mark>' + ((self.currencyList[i].EUR) ? self.currencyList[i].EUR.rateBuy : "Нет данных") +
+                                            '</mark>&nbsp; &nbsp;' +
+                                            ((self.currencyList[i].EUR) ? self.currencyList[i].EUR.rateBuyDeltaTemplate : "") +
                                         '</span>' +
                                         '<span>' +
-                                            '<mark>' + self.currency[i + 1].rateBuy + '</mark>&nbsp; &nbsp;' +
-                                            self.currency[i + 1].rateBuyDeltaTemplate +
+                                            '<mark>' + ((self.currencyList[i].USD) ? self.currencyList[i].USD.rateBuy : "Нет данных") +
+                                            '</mark>&nbsp; &nbsp;' +
+                                            ((self.currencyList[i].USD) ? self.currencyList[i].USD.rateBuyDeltaTemplate : "") +
                                         '</span>' +
                                         '<span>' +
-                                            '<mark>' + self.currency[i + 2].rateBuy + '</mark>&nbsp; &nbsp;' +
-                                            self.currency[i + 2].rateBuyDeltaTemplate +
+                                            '<mark>' + ((self.currencyList[i].RUB) ? self.currencyList[i].RUB.rateBuy : "Нет данных") +
+                                            '</mark>&nbsp; &nbsp;' +
+                                            ((self.currencyList[i].RUB) ? self.currencyList[i].RUB.rateBuyDeltaTemplate : "") +
                                         '</span>' +
                                     '</td>' +
                                     '<td>' +
                                         '<span>' +
-                                            '<mark>' + self.currency[i].rateSale + '</mark>&nbsp; &nbsp;' +
-                                            self.currency[i].rateSaleDeltaTemplate +
+                                            '<mark>' + ((self.currencyList[i].EUR) ? self.currencyList[i].EUR.rateSale : "Нет данных") +
+                                            '</mark>&nbsp; &nbsp;' +
+                                            ((self.currencyList[i].EUR) ? self.currencyList[i].EUR.rateSaleDeltaTemplate : "") +
                                         '</span>' +
                                         '<span>' +
-                                            '<mark>' + self.currency[i + 1].rateSale + '</mark>&nbsp; &nbsp;' +
-                                            self.currency[i + 1].rateSaleDeltaTemplate +
+                                            '<mark>' + ((self.currencyList[i].USD) ? self.currencyList[i].USD.rateSale : "Нет данных") +
+                                            '</mark>&nbsp; &nbsp;' +
+                                            ((self.currencyList[i].USD) ? self.currencyList[i].USD.rateSaleDeltaTemplate : "") +
                                         '</span>' +
                                         '<span>' +
-                                            '<mark>' + self.currency[i + 2].rateSale + '</mark>&nbsp; &nbsp;' +
-                                            self.currency[i + 2].rateSaleDeltaTemplate +
+                                            '<mark>' + (((self.currencyList[i].RUB)) ? self.currencyList[i].RUB.rateSale : "Нет данных") +
+                                            '</mark>&nbsp; &nbsp;' +
+                                            (((self.currencyList[i].RUB)) ? self.currencyList[i].RUB.rateSaleDeltaTemplate : "") +
                                         '</span>' +
                                     '</td>' +
                                 '</tr>';
@@ -85,21 +93,25 @@ Currency.prototype.setCurrencyList = function(response, self){
     self.elem.insertAdjacentHTML("beforeend", self.currencyTemplate);
 };
 
-Currency.prototype.setDelta = function(self){
-    for (var i = 0; i < self.currency.length; i++){
-        if (self.currency[i].rateBuyDelta > 0){
-            self.currency[i].rateBuyDeltaTemplate = "<i class='-to-hight'> &nbsp; &#9650;</i>";
-        }else if(self.currency[i].rateBuyDelta < 0){
-            self.currency[i].rateBuyDeltaTemplate = "<i class='-to-low'> &nbsp; &#9660;</i>";
-        }else {
-            self.currency[i].rateBuyDeltaTemplate = "";
-        }
-        if (self.currency[i].rateSaleDelta > 0){
-            self.currency[i].rateSaleDeltaTemplate = "<i class='-to-hight'> &nbsp; &#9650;</i>";
-        }else if(self.currency[i].rateSaleDelta < 0){
-            self.currency[i].rateSaleDeltaTemplate = "<i class='-to-low'> &nbsp; &#9660;</i>";
-        }else{
-            self.currency[i].rateSaleDeltaTemplate = "";
+Currency.prototype.setDeltaTemplates = function(self){
+    for (var i = 0; i < self.currencyList.length; i++){
+        for (var field in self.currencyList[i]){
+            if (typeof self.currencyList[i][field] == "object"){
+                if (self.currencyList[i][field].rateBuyDelta > 0){
+                    self.currencyList[i][field].rateBuyDeltaTemplate = "<i class='-to-hight'> &nbsp; &#9650;</i>";
+                }else if(self.currencyList[i][field].rateBuyDelta < 0){
+                    self.currencyList[i][field].rateBuyDeltaTemplate = "<i class='-to-low'> &nbsp; &#9660;</i>";
+                }else {
+                    self.currencyList[i][field].rateBuyDeltaTemplate = "";
+                }
+                if (self.currencyList[i][field].rateSaleDelta > 0){
+                    self.currencyList[i][field].rateSaleDeltaTemplate = "<i class='-to-hight'> &nbsp; &#9650;</i>";
+                }else if(self.currencyList[i][field].rateSaleDelta < 0){
+                    self.currencyList[i][field].rateSaleDeltaTemplate = "<i class='-to-low'> &nbsp; &#9660;</i>";
+                }else{
+                    self.currencyList[i][field].rateSaleDeltaTemplate = "";
+                }
+            }
         }
     }
 };
@@ -107,5 +119,20 @@ Currency.prototype.setDelta = function(self){
 Currency.prototype.setBankList = function(list, self){
     self.currency = self.currency.filter(function(bank){
         return (list.indexOf(bank.bankName) >= 0);
-    })
+    });
+    for (var i = 0; i < self.bankList.length; i++){
+        self.currencyList[i] = {};
+        self.currencyList[i].bankName = self.bankList[i];
+    }
+    for (i = 0; i < self.currency.length; i++){
+        for (var j = 0; j < self.currencyList.length; j++){
+            if (self.currency[i].bankName == self.currencyList[j].bankName){
+                self.currencyList[j][self.currency[i].codeAlpha] = {};
+                self.currencyList[j][self.currency[i].codeAlpha].rateBuy = self.currency[i].rateBuy;
+                self.currencyList[j][self.currency[i].codeAlpha].rateBuyDelta = self.currency[i].rateBuyDelta;
+                self.currencyList[j][self.currency[i].codeAlpha].rateSale = self.currency[i].rateSale;
+                self.currencyList[j][self.currency[i].codeAlpha].rateSaleDelta = self.currency[i].rateSaleDelta;
+            }
+        }
+    }
 };
